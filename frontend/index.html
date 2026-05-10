@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="description" content="PhantomChat — End-to-End Encrypted Disappearing Messages with PFS">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PhantomChat</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <!-- Lightbox -->
+  <div id="image-lightbox" class="hidden">
+    <button id="lightbox-close" title="Close">✕</button>
+    <img id="lightbox-image" src="" alt="Encrypted Image">
+  </div>
+
+  <!-- Panic Cover -->
+  <div id="panic-cover" class="hidden">
+    <iframe src="about:blank" id="panic-iframe" title="Wikipedia" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div id="auth-screen" class="screen">
+    <div class="particles" id="particles"></div>
+    <div class="auth-container">
+      <div class="phantom-logo">👻</div>
+      <h1 class="auth-title">PhantomChat</h1>
+      <p class="auth-subtitle">E2EE · PFS Ratchet · Disappearing Messages</p>
+
+      <!-- Login / Register Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-register" data-mode="register">Register</button>
+        <button class="auth-tab" id="tab-login" data-mode="login">Login</button>
+      </div>
+
+      <div class="auth-input-group">
+        <input type="text" id="handle-input" placeholder="Choose a handle..." maxlength="24" autocomplete="off" spellcheck="false">
+      </div>
+      <div id="handle-availability" class="availability-indicator"></div>
+
+      <div class="auth-input-group">
+        <input type="password" id="password-input" placeholder="Password (min 4 chars)" minlength="4" maxlength="128" autocomplete="off">
+      </div>
+
+      <button id="register-btn" class="auth-btn" disabled>Create Account & Enter</button>
+
+      <div id="auth-progress" class="auth-progress hidden">
+        <div class="progress-track"><div class="progress-fill" id="auth-progress-bar"></div></div>
+        <span id="auth-progress-label"></span>
+      </div>
+      <div id="auth-status"></div>
+
+      <div class="auth-features">
+        <div class="feature-badge">🔐 ECDH P-384</div>
+        <div class="feature-badge">🛡️ AES-GCM-256</div>
+        <div class="feature-badge">🔄 PFS Ratchet</div>
+        <div class="feature-badge">💨 Auto-Destruct</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CHAT SCREEN ===== -->
+  <div id="chat-screen" class="screen hidden">
+    <!-- Sidebar Overlay (mobile) -->
+    <div id="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <span class="logo-sm">👻</span>
+          <span>Phantom</span>
+        </div>
+        <div class="user-badge">
+          <span class="connection-status connected" id="connection-status"></span>
+          <span id="current-user-label"></span>
+        </div>
+      </div>
+      <div class="contacts-label">Contacts</div>
+      <div id="contact-list"></div>
+      <div class="sidebar-footer">
+        <button id="delete-account-btn">🗑️ Delete Account</button>
+      </div>
+    </aside>
+
+    <!-- Main Chat -->
+    <main class="chat-main">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <button id="sidebar-toggle" title="Menu">☰</button>
+          <button id="mobile-back-btn" title="Back" class="hidden">←</button>
+          <span id="chat-header-name" style="color:var(--text-muted)">Select a contact</span>
+          <span class="encryption-badge" id="encryption-badge">🔒 E2EE</span>
+          <span class="webrtc-badge relay hidden" id="webrtc-badge">RELAY</span>
+        </div>
+      </div>
+
+      <div id="chat-placeholder">
+        <div class="placeholder-icon">💬</div>
+        <p class="placeholder-text">Select a contact to start a secure conversation</p>
+      </div>
+
+      <div id="messages-area" class="hidden"></div>
+
+      <div id="typing-indicator" class="hidden">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+        <span>typing...</span>
+      </div>
+
+      <div id="message-input-area" class="hidden" style="position:relative;">
+        <!-- Emoji Picker -->
+        <div id="emoji-picker" class="hidden"></div>
+        <div class="input-row">
+          <button id="attach-btn" title="Attach file">📎</button>
+          <input type="file" id="file-input" accept="image/*,video/*,.pdf,.doc,.docx,.zip,.rar,.txt" style="display:none">
+          <button id="emoji-btn" title="Emoji">😊</button>
+          <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+          <button id="send-btn" title="Send">▶</button>
+        </div>
+        <div id="image-preview-bar" class="hidden">
+          <img id="image-preview-thumb" src="" alt="Preview">
+          <div class="preview-info">
+            <div class="preview-name" id="image-preview-name"></div>
+            <div class="preview-size" id="image-preview-size"></div>
+          </div>
+          <button id="cancel-image-btn" title="Cancel">✕</button>
+        </div>
+        <div class="ttl-bar">
+          <span class="ttl-label">⏱ Self-destruct:</span>
+          <select id="ttl-select"></select>
+          <div id="ttl-custom-container" class="hidden">
+            <input type="number" id="ttl-custom-input" min="5" max="86400" placeholder="sec">
+            <span class="ttl-unit">sec</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/crypto.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    (function() {
+      const c = document.getElementById('particles');
+      if (!c) return;
+      for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const s = Math.random() * 4 + 2;
+        p.style.width = s + 'px'; p.style.height = s + 'px';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (Math.random() * 20 + 15) + 's';
+        p.style.animationDelay = (Math.random() * 10) + 's';
+        c.appendChild(p);
+      }
+    })();
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  </script>
+</body>
+</html>
