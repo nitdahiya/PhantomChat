@@ -80,3 +80,6 @@ Use at your own risk. This project is provided as-is, primarily for educational 
 ## 📄 License
 
 MIT License
+
+----
+Made by [@whojaat](https://t.me/whojaat)
